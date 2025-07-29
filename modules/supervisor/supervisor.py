@@ -63,12 +63,15 @@ class HostAgentHub:
         if cls._instance is None:
             raise Exception("Host agent has not been started yet")
         return cls._instance
-
-    SYSTEM_INSTRUCTION = (
-        "You are an agent in charge of answer the user's query, order the agent responses according to relevance for the user query"
-        "ALWAYS use the function lang_list_remote_agents to know the agent names and capabilities before sending the request"
-        "Always use both agents to answer the user and display their answers in relevance order according to the user's query"
-        "If an agent gaves an error response, display the error response so the user know about it"
+    
+    def build_system_instruction(self):
+        self.SYSTEM_INSTRUCTION = (
+        "You are a supervisor of different agents to plan dates, parties and meetings.\n"
+        f"The current agents available are: {self.list_remote_agents()}.\n"
+        "ALWAYS ask first all the agents to come up with a plan on how they could address the user query, JUST a plan, not the actual final answer, ask something like 'Tell me what is you plan to address the nex user query...'.\n"
+        "Based on the plan offered by each agent, select the top 3 relevant agents (if available) and ask them to complete now the user query.\n"
+        "You are in charge of answer the user's query, order the agent responses according to relevance for the user.\n"
+        "BEFORE finish you execution, ALWAYS make sure the user query is fully completed and addressed. DO NOT make up any data, if missing, ask the user for it."
     )
 
     def __init__(self, remote_agent_addesses:list[str], http_client:httpx.AsyncClient):
@@ -116,10 +119,11 @@ class HostAgentHub:
         return remote_agent_info
 
     def create_agent(self):
+        self.build_system_instruction()
         self.tools = [lang_list_remote_agents, send_message_2_agent]
         self.hub_agent = create_react_agent(
             model=self.model,
             tools=self.tools,
             checkpointer=self.memory,
             prompt=self.SYSTEM_INSTRUCTION
-        )  
+        )

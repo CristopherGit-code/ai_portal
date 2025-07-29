@@ -10,6 +10,7 @@ dependencies = [
     "langchain>=0.3.27",
     "langchain-community>=0.3.27",
     "langchain-openai>=0.3.28",
+    "langfuse>=3.2.1",
     "langgraph>=0.6.0",
     "oci>=2.156.0",
     "python-box>=7.3.2",
