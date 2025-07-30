@@ -9,23 +9,18 @@ class SupervisorManager:
     _instance = None
     _initialized = False
 
-    def __new__(cls):
+    def __new__(cls, http_client:httpx.AsyncClient):
         if cls._instance is None:
             cls._instance = super(SupervisorManager,cls).__new__(cls)
         return cls._instance
     
-    @classmethod
-    def get_instance(cls):
-        if cls._instance is None:
-            raise Exception("Host agent has not been started yet")
-        return cls._instance
-    
-    def __init__(self):
+    def __init__(self,http_client:httpx.AsyncClient):
         if not self._initialized:
-            self.http_client = httpx.AsyncClient(timeout=10.0)
+            self.http_client = http_client
             self.remote_addresses = [
                 "http://localhost:9999/",
-                "http://localhost:9998/"
+                "http://localhost:9998/",
+                "http://localhost:9997/"
             ]
             self.supervisor_host = HostAgentHub(self.remote_addresses,self.http_client)
             self.supervisor_host.create_agent()

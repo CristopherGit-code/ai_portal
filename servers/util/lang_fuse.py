@@ -18,7 +18,7 @@ class FuseConfig:
     def _init(self):
         if self._initialized:
             return
-        self.settings = Settings(r"C:\Users\Cristopher Hdz\Desktop\ai_portal\modules\util\config\config.yaml")   
+        self.settings = Settings(r"C:\Users\Cristopher Hdz\Desktop\ai_portal\servers\util\config\config.yaml")   
         """ VM host """
         Langfuse(
             public_key=self.settings.langfuse.PUBLIC_VM_KEY,

@@ -92,7 +92,7 @@ class RemoteAgentConnections:
             return final_text
     
 async def main():
-    ports = [9999,8888]
+    ports = [9997]
     host = 'localhost'
     servers:dict[str,RemoteAgentConnections] = {}
     async with httpx.AsyncClient() as httpx_client:
@@ -110,9 +110,7 @@ async def main():
             name = str(final_agent_card_use.name)
             agent = RemoteAgentConnections(httpx_client,final_agent_card_use)
             servers[name] = agent
-        response = await servers["Art agent"].send_message_agent("Who was nikola tesla?")
-        print(response)
-        response = await servers["Science agent"].send_message_agent("Who was nikola tesla?")
+        response = await servers["Flower agent"].send_message_agent("Which are the flowers available from the store?")
         print(response)
 
 if __name__ == '__main__':

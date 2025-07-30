@@ -5,43 +5,48 @@ from langchain_core.tools import tool
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
 from servers.util.oci_client import LLM_Client
+from modules.util.lang_fuse import FuseConfig
 
 oci_client = LLM_Client()
 memory = MemorySaver()
 
-@tool
-def find_movie_function(day:str, movie:str)->str:
-    """ Finds available cinema functions for a given day and movie"""
-    response = f"Function at {day} for the movie {movie} for: 7 pm 10 pm 12 pm"
-    return response
+fuse_tracer = FuseConfig()
+id = fuse_tracer.generate_id()
+trace_handler = fuse_tracer.get_handler()
 
 @tool
-def buy_tickets(movie:str,day:str,hour:str)->str:
-    """ Purchase the tickets for the given movie """
-    response = f"Purchased tickets for {movie}, at {day}, {hour}"
-    return response
+def list_flowers()->list[str]:
+    """ Returns the available flowers to make orders to store """
+    flowers = ["roses","daisy","tulip","sunflower"]
+    return flowers
 
 @tool
-def list_movies(day:str)->list[str]:
-    """ Returns the list of available movies for a given day """
-    movies = ["Avengers","Home","It","Mission: Impossible"]
-    return movies
+def create_bunch(flowers:str)->str:
+    """ Given a list of flowers creates a great bunch of flowers to order """
+    order = f"Created bunch of flowers using {flowers} as base"
+    return order
 
-class CinemaAgent:
-    """ Agent expert in planning cinema visits, offers movie information, functions, and ticket purchase """
+@tool 
+def confirm_order(day:str,flowers:str)->str:
+    """ Given the day and the list of flowers confirms an order for a bunch of flowers """
+    return f"Order for {day} using {flowers} as base, confirmed and ready to pick up"
+
+class FlowerAgent:
+    """ Agent expert in purchasing, ordering and create bunch of flowers for dates """
 
     SYSTEM_INSTRUCTION = (
-        "You are an expert in planning cinema visits, find movies, select functions, and buy tickets.\n"
+        "You are an expert purchase, order, create bunch of flowers for dates.\n"
         "You have different tools availabe to complete user requests.\n"
-        "DO NOT address queries UNRELATED TO CINEMA, DO NOT MAKE UP information and refuse to answer politely if the query is not related to cinema.\n"
+        "DO NOT address queries UNRELATED TO flowers, bunch of flowers, orders for dates, DO NOT MAKE UP information and refuse to answer politely if the query is not related to flowers.\n"
         "If the query has different requests, just answer the request related to cinema, and reply that the other requests are out of your capacity.\n"
         "ALWAYS answer in LESS than 50 words."
     )
 
     def __init__(self):
         self.model = oci_client.build_llm_client()
-        self.tools = [find_movie_function,buy_tickets,list_movies]
-        self.art_agent = create_react_agent(
+        self.tools = [list_flowers,create_bunch,confirm_order]
+        # self.tools = [list_flowers]
+        self.flower_agent = create_react_agent(
             model=self.model,
             tools=self.tools,
             checkpointer=memory,
@@ -50,10 +55,10 @@ class CinemaAgent:
 
     async def stream(self,query,context_id)-> AsyncIterable[dict[str,Any]]:
         inputs = {'messages': [('user', query)]}
-        config = {'configurable': {'thread_id': context_id}}
+        config = {'configurable': {'thread_id': context_id},'callbacks':[trace_handler],'metadata':{'langfuse_session_id':id}}
         final_response = []
         try:
-            for chunk in self.art_agent.stream(inputs,config,stream_mode="values"):
+            for chunk in self.flower_agent.stream(inputs,config,stream_mode="values"):
                 message = chunk['messages'][-1]
                 final_response.append(message.content)
                 if isinstance(message,AIMessage):
