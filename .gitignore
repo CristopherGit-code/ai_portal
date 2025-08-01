@@ -10,5 +10,4 @@ wheels/
 .venv
 .env
 
-# test
-oci_openai_test.py
+ociopen_ai.py
