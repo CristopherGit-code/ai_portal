@@ -8,7 +8,7 @@ from langgraph.graph import MessagesState
 import logging
 
 logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(name=f"Agent.{__name__}")
+logger = logging.getLogger(name=f"VERIFY.{__name__}")
 
 fuse_tracer = FuseConfig()
 id = fuse_tracer.generate_id()
@@ -69,17 +69,13 @@ class VerificationAgent:
         if str(state["messages"][-1].content) == 'reject':
             return "Fail"
         return "Pass"
-    
-    def cluster_agents(self,state:MessagesState):
-        """ Continues the work to the cluster agent """
-        return{"messages": [{"role": "user", "content": state["messages"][0].content}]}
 
 async def main_loop():
     agent = VerificationAgent()
     user_input = input("USER: ")
     response = agent.verify_agent.invoke(
             {"messages": [{"role": "user", "content": user_input}]},
-            {'configurable': {'thread_id': "1"},'callbacks':[trace_handler],'metadata':{'langfuse_session_id':id}}
+            {'configurable': {'thread_id': "1"}}
         )
     print("======== model response:")
     print(response)

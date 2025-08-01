@@ -1,5 +1,5 @@
 import asyncio, operator
-from typing import Annotated, List
+from typing import Annotated, Any, List
 from typing_extensions import TypedDict
 from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph, START, END, MessagesState
@@ -8,6 +8,11 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.types import Send
 from langgraph.prebuilt import create_react_agent
 from modules.util.ociopen_ai import LLM_Open_Client
+from modules.chain_agents.workers import (
+    CinemaAgentPlanner,
+    DecorationAgentPlanner,
+    FlowerAgentPlanner
+)
 
 class Plan(BaseModel):
     agent_name: str = Field(
@@ -51,9 +56,9 @@ class OrchestratorAgent:
     def build_system_instruction(self):
         self.SYSTEM_INSTRUCTION = (
         "You are a team leader responsible for managing user requests by orchestating and delegating tasks to specialized agents.\n"
-        f"Each agent has different expertise scopes and skills: {self.remote_agent_connections}.\n"
+        f"Each agent has different expertise scopes and skills: {self.remote_agent_connections}.Use only the agents inside the list and dont make up any new one\n"
         "Your primary objectives are:\n"
-        "1. Ask each agent to come up with a plan to complete the user query.\n"
+        "1. Ask EACH agent to come up with a plan to complete the user query.\n"
         "2. Make emphasis to the agents to answer what they have to offer, their capabilities on that topic, similar to a bid offering their services to complete the user query.\n"
         "3. The main aim is to know the capabilities and limitations of each agent.\n"
         "Main key: create a plan request for each of the agents in the list."
@@ -61,12 +66,19 @@ class OrchestratorAgent:
 
     def __init__(self):
         if not self._initialized:
+            self.cinema_planner = CinemaAgentPlanner()
+            self.flower_planner = FlowerAgentPlanner()
+            self.deco_planner = DecorationAgentPlanner()
             self.remote_agent_connections:list[dict[str,str]] = [
-                {'name': 'cinema_agent', 'description': 'helps planning and retriving cinema data and functions'},
-                {'name': 'decoration_agent', 'description': 'helps with decoration information for meetings and dates in certain places'},
-                {'name': 'flower_agent', 'description': 'helps with flower information to create bunch of flowers'},
-                {'name': 'food_agent', 'description': 'helps with food planning to make dishes at home and visit different restaurants'},
+                {'name': self.cinema_planner.name, 'description': self.cinema_planner.description},
+                {'name': self.deco_planner.name, 'description': self.deco_planner.description},
+                {'name': self.flower_planner.name, 'description': self.flower_planner.description},
             ]
+            self.agent_list:dict[str,Any] = {
+                self.cinema_planner.name: self.cinema_planner, 
+                self.deco_planner.name: self.deco_planner,
+                self.flower_planner.name: self.flower_planner
+            }
             self.oci_client = LLM_Open_Client()
             self.lead_model = self.oci_client.build_llm_client()
             self.worker_model = self.oci_client.build_llm_client()
@@ -95,11 +107,26 @@ class OrchestratorAgent:
     def agent_call(self, state: WorkerState):
         """Worker generates a plan to solve the query"""
 
-        # Generate section
+        try:
+            agent = self.agent_list[state['plan'].agent_name]
+            tools = agent.tools
+            response = agent.planner.invoke({"messages": [{"role": "user", "content": state['plan'].request}]},
+                    {'configurable': {'thread_id': "1"}},)
+            
+            print("Expert response ------------------------------------->>>")
+            print(response["structured_response"])
+            return {"completed_plans": [str(response["structured_response"])]}
+        except Exception as e:
+            print("Expert ERROR ------------------------------------->>>")
+            print(e)
+
+        if not tools: 
+            tools = []
+
         plan = self.worker_model.invoke(
             [
                 SystemMessage(
-                    content=f"You are an agent called {state['plan'].agent_name}, expert in the tasks that match the following description: {state['plan'].agent_description}. Come up with a plan to address the user request focusing only in your description scope, refuse politely to answer any other queries not related to that"
+                    content=f"You are an agent called {state['plan'].agent_name}, expert in the tasks that match the following description: {state['plan'].agent_description}. Come up with a plan to address the user request, considering you only have this tools {tools} available. Include agent name in response, refuse politely to answer any other queries not related to that. Answer in LESS than 100 words."
                 ),
                 HumanMessage(
                     content=f"Here is the user request: {state['plan'].request}"
@@ -107,7 +134,6 @@ class OrchestratorAgent:
             ]
         )
 
-        # Write the updated plan to completed plans
         return {"completed_plans": [plan.content]}
     
     def synthesizer(self,state: State):
@@ -149,15 +175,12 @@ class OrchestratorAgent:
     def call_main_cluster(self,state:MessagesState)-> MessagesState:
         graph = self.build_main_cluster()
 
-        query = state["messages"][-1].content
+        query = state["messages"][0].content
         response = graph.invoke({'query': {'content': query}})
-        final_response = response['final_selected_agents']
+        agent_plans = response['final_selected_agents']
+        final_response = f"Original user query:\n{query}.\n Agent plans to fulfill the query:\n{agent_plans}"
 
         return {"messages": [{"role": "assistant", "content": final_response}]}
-    
-    def test(self,state:MessagesState):
-        print(state)
-        return {"messages": [{"role": "assistant", "content": "End of the graph"}]}
 
 async def main():
     main_orchestrator = OrchestratorAgent()
