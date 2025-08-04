@@ -79,7 +79,6 @@ async def main_loop():
         )
     print("======== model response:")
     print(response)
-    """ {'messages': [HumanMessage(content='what is the capital of congo?', additional_kwargs={}, response_metadata={}, id='9debc275-cfad-4a83-ab11-74e85e5dc77b'), AIMessage(content='I’m here to assist with planning dates, parties, decorations, movies, flowers, and general event planning. If you need help organizing an event or any of the related topics, please let me know!', additional_kwargs={'refusal': None}, response_metadata={'token_usage': {'completion_tokens': 41, 'prompt_tokens': 126, 'total_tokens': 167, 'completion_tokens_details': {'accepted_prediction_tokens': 0, 'audio_tokens': 0, 'reasoning_tokens': 0, 'rejected_prediction_tokens': 0}, 'prompt_tokens_details': {'audio_tokens': 0, 'cached_tokens': 0}}, 'model_name': 'openai.gpt-4.1', 'system_fingerprint': 'fp_799e4ca3f1', 'id': 'chatcmpl-BzRSFiN1gpKhiLIWeIVO9ppW12fjv', 'service_tier': 'default', 'finish_reason': 'stop', 'logprobs': None}, id='run--6f14355a-f5d9-4f38-98cf-31310517935b-0', usage_metadata={'input_tokens': 126, 'output_tokens': 41, 'total_tokens': 167, 'input_token_details': {'audio': 0, 'cache_read': 0}, 'output_token_details': {'audio': 0, 'reasoning': 0}})], 'structured_response': ResponseFormat(status='reject', message='Your query is not related to party, date, or meeting planning. Please let me know if you need help organizing an event or planning a celebration!')} """
     return
 
 if __name__ == '__main__':

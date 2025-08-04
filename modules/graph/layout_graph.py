@@ -3,8 +3,13 @@ import logging,httpx
 from langgraph.graph import StateGraph, START, MessagesState, END
 from modules.chain_agents.verification import VerificationAgent
 from modules.chain_agents.orchestrator import OrchestratorAgent
+from modules.chain_agents.layout import LayoutAgent
 from modules.chain_agents.executor import ExecutorAgent
 from modules.util.lang_fuse import FuseConfig
+from modules.chain_agents.agents import WorkerManager
+from typing import Annotated
+from langchain_core.messages import AnyMessage
+from langgraph.graph import add_messages
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(name=f"GRAPH.{__name__}")
@@ -16,6 +21,8 @@ trace_handler = fuse_tracer.get_handler()
 class LayoutState(MessagesState):
     """ change the status according to execution steps """
     status: str
+    plans: Annotated[list[AnyMessage], add_messages]
+
 
 class ChainManager:
     _instance = None
@@ -29,31 +36,51 @@ class ChainManager:
     def __init__(self,http_client:httpx.AsyncClient):
         if not self._initialized:
             self.http_client = http_client
-            self.remote_addresses = [
-                "http://localhost:9999/",
-                "http://localhost:9998/",
-                "http://localhost:9997/"
-            ]
-            # self.team_lead_host = TeamLeadAgent(self.remote_addresses,self.http_client)
-            # self.team_lead_host.create_agent()
-            # self.team_lead = self.team_lead_host.team_lead_agent
             self.orchestrator_hub = OrchestratorAgent()
             self.orchestrator = self.orchestrator_hub.build_main_cluster()
             self.verification_agent = VerificationAgent()
+            self.layout_hub = LayoutAgent()
             self.executor = ExecutorAgent()
+            self.workers_hub = WorkerManager()
             ChainManager._initialized = True
     
+    def synthesizer(self,state:LayoutState):
+        """Synthesize full agent plans form the list"""
+
+        print("================== Synthesizer")
+
+        full_plan = []
+
+        for plan in state["plans"]:
+            details = plan.content
+            full_plan.append(details)
+
+        return {"messages": [{"role": "assistant", "content": full_plan}],'status':'execute','plans':full_plan}
+
     async def main_graph(self):
         main_graph_builder = StateGraph(LayoutState)
+
         main_graph_builder.add_node("verify",self.verification_agent.verify_query)
-        main_graph_builder.add_node("team_lead",self.orchestrator_hub.call_main_cluster)
-        main_graph_builder.add_node("executor",self.executor.executor_agent)
+        main_graph_builder.add_node("layout_plan",self.layout_hub.call_layout_agent)
+        main_graph_builder.add_node("layout_execute",self.layout_hub.call_layout_agent)
+
+        for agent in self.workers_hub.agent_list:
+            main_graph_builder.add_node(agent[0],agent[1])
+
+        main_graph_builder.add_node("synthesizer",self.synthesizer)
+
         main_graph_builder.add_edge(START,"verify")
+        
         main_graph_builder.add_conditional_edges(
-            "verify", self.verification_agent.verification_check, {"Fail": END, "Pass": "team_lead"}
+            "verify", self.verification_agent.verification_check, {"Fail": END, "Pass": "layout_plan"}
         )
-        main_graph_builder.add_edge("team_lead","executor")
-        main_graph_builder.add_edge("executor",END)
+
+        for agent in self.workers_hub.agent_list:
+            main_graph_builder.add_edge("layout_plan",agent[0])
+            main_graph_builder.add_edge(agent[0],"synthesizer")
+
+        main_graph_builder.add_edge("synthesizer","layout_execute")
+
         graph = main_graph_builder.compile()
 
         try:
@@ -66,7 +93,7 @@ class ChainManager:
             ):
                 try:
                     logger.debug("============ Chunk response ==========")
-                    logger.debug(chunk[-1]['messages'][-1])
+                    logger.debug(chunk[-1])
                     final_response.append(chunk[-1]['messages'][-1].content)
                 except Exception as p:
                     final_response.append(f"Error in response: {p}")

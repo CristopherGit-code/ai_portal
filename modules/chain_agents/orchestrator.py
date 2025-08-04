@@ -120,8 +120,7 @@ class OrchestratorAgent:
             print("Expert ERROR ------------------------------------->>>")
             print(e)
 
-        if not tools: 
-            tools = []
+        tools = ['No tools for this agents']
 
         plan = self.worker_model.invoke(
             [
@@ -180,7 +179,7 @@ class OrchestratorAgent:
         agent_plans = response['final_selected_agents']
         final_response = f"Original user query:\n{query}.\n Agent plans to fulfill the query:\n{agent_plans}"
 
-        return {"messages": [{"role": "assistant", "content": final_response}]}
+        return {"messages": [{"role": "assistant", "content": final_response}],'state':'execute'}
 
 async def main():
     main_orchestrator = OrchestratorAgent()
