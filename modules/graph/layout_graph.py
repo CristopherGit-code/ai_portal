@@ -26,14 +26,13 @@ class ChainManager:
     _instance = None
     _initialized = False
 
-    def __new__(cls, http_client:httpx.AsyncClient):
+    def __new__(cls):
         if cls._instance is None:
             cls._instance = super(ChainManager,cls).__new__(cls)
         return cls._instance
     
-    def __init__(self,http_client:httpx.AsyncClient):
+    def __init__(self):
         if not self._initialized:
-            self.http_client = http_client
             self.verification_agent = VerificationAgent()
             self.layout_hub = LayoutAgent()
             self.executor_hub = ExecutorAgent()
@@ -104,10 +103,10 @@ class ChainManager:
             return f'General error: {e}'
 
 async def main():
-    async with httpx.AsyncClient(timeout=10.0) as http_client:
-        chain = ChainManager(http_client)
-        response = await chain.call_main_graph()
-        print(response)
+    chain = ChainManager()
+    response = await chain.call_main_graph()
+    print(response)
+        
 
 if __name__ == "__main__":
     asyncio.run(main())
