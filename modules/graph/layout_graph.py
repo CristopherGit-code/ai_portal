@@ -1,18 +1,17 @@
 import asyncio
 import logging,httpx
 from langgraph.graph import StateGraph, START, MessagesState, END
-from modules.chain_agents.verification import VerificationAgent
-from modules.chain_agents.orchestrator import OrchestratorAgent
-from modules.chain_agents.layout import LayoutAgent
-from modules.chain_agents.executor import ExecutorAgent
+from modules.cluster.verification import VerificationAgent
+from modules.cluster.layout import LayoutAgent
+from modules.cluster.executor import ExecutorAgent
 from modules.util.lang_fuse import FuseConfig
-from modules.chain_agents.agents import WorkerManager
+from modules.cluster.agents import WorkerManager
 from typing import Annotated
 from langchain_core.messages import AnyMessage
 from langgraph.graph import add_messages
 
 logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(name=f"GRAPH.{__name__}")
+logger = logging.getLogger(name=f"LAYOUT_GRAPH.{__name__}")
 
 fuse_tracer = FuseConfig()
 id = fuse_tracer.generate_id()
@@ -22,7 +21,6 @@ class LayoutState(MessagesState):
     """ change the status according to execution steps """
     status: str
     plans: Annotated[list[AnyMessage], add_messages]
-
 
 class ChainManager:
     _instance = None
@@ -36,18 +34,14 @@ class ChainManager:
     def __init__(self,http_client:httpx.AsyncClient):
         if not self._initialized:
             self.http_client = http_client
-            self.orchestrator_hub = OrchestratorAgent()
-            self.orchestrator = self.orchestrator_hub.build_main_cluster()
             self.verification_agent = VerificationAgent()
             self.layout_hub = LayoutAgent()
-            self.executor = ExecutorAgent()
+            self.executor_hub = ExecutorAgent()
             self.workers_hub = WorkerManager()
             ChainManager._initialized = True
     
     def synthesizer(self,state:LayoutState):
         """Synthesize full agent plans form the list"""
-
-        print("================== Synthesizer")
 
         full_plan = []
 
@@ -57,12 +51,13 @@ class ChainManager:
 
         return {"messages": [{"role": "assistant", "content": full_plan}],'status':'execute','plans':full_plan}
 
-    async def main_graph(self):
+    def build_main_graph(self):
         main_graph_builder = StateGraph(LayoutState)
 
         main_graph_builder.add_node("verify",self.verification_agent.verify_query)
         main_graph_builder.add_node("layout_plan",self.layout_hub.call_layout_agent)
-        main_graph_builder.add_node("layout_execute",self.layout_hub.call_layout_agent)
+        main_graph_builder.add_node("layout_select",self.layout_hub.call_layout_agent)
+        main_graph_builder.add_node("executor",self.executor_hub.call_executor_agent)
 
         for agent in self.workers_hub.agent_list:
             main_graph_builder.add_node(agent[0],agent[1])
@@ -79,33 +74,40 @@ class ChainManager:
             main_graph_builder.add_edge("layout_plan",agent[0])
             main_graph_builder.add_edge(agent[0],"synthesizer")
 
-        main_graph_builder.add_edge("synthesizer","layout_execute")
+        main_graph_builder.add_edge("synthesizer","layout_select")
+        main_graph_builder.add_edge("layout_select","executor")
 
         graph = main_graph_builder.compile()
 
+        return graph
+
+    async def call_main_graph(self):
+        graph = self.build_main_graph()
         try:
             user_input = input("USER: ")
             final_response = []
-            for chunk in graph.stream( {"messages": [{"role": "user", "content": user_input}],'status':'plan'},
+            async for chunk in graph.astream( {"messages": [{"role": "user", "content": user_input}],'status':'plan'},
                 {'configurable': {'thread_id': "1"},'callbacks':[trace_handler],'metadata':{'langfuse_session_id':id}},
                 stream_mode="values",
                 subgraphs=True
             ):
                 try:
-                    logger.debug("============ Chunk response ==========")
+                    logger.debug("============ Chunk response ==========\n")
                     logger.debug(chunk[-1])
                     final_response.append(chunk[-1]['messages'][-1].content)
                 except Exception as p:
                     final_response.append(f"Error in response: {p}")
-            print("\nMODEL RESPONSE")
-            print(final_response[-1])
+            final_text = f"MODEL RESPONSE:\n{final_response[-1]}"
+            return final_text
         except Exception as e:
             logger.info(f'General error: {e}')
+            return f'General error: {e}'
 
 async def main():
     async with httpx.AsyncClient(timeout=10.0) as http_client:
         chain = ChainManager(http_client)
-        await chain.main_graph()
+        response = await chain.call_main_graph()
+        print(response)
 
 if __name__ == "__main__":
     asyncio.run(main())

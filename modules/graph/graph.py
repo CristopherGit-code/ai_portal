@@ -1,9 +1,9 @@
 import asyncio
 import logging,httpx
 from langgraph.graph import StateGraph, START, MessagesState, END
-from modules.chain_agents.verification import VerificationAgent
+from modules.cluster.verification import VerificationAgent
 from modules.chain_agents.orchestrator import OrchestratorAgent
-from modules.chain_agents.executor import ExecutorAgent
+from modules.cluster.executor import ExecutorAgent
 from modules.util.lang_fuse import FuseConfig
 
 logging.basicConfig(level=logging.DEBUG)

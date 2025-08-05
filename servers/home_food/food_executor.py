@@ -2,7 +2,7 @@ from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events import EventQueue
 from a2a.server.tasks import TaskUpdater
 from a2a.utils import new_agent_text_message
-from servers.flower.flower_agent import FlowerAgent
+from servers.home_food.food_agent import FoodAgent
 from a2a.types import (
     InternalError,
     InvalidParamsError,
@@ -22,11 +22,11 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-class FlowerAgentExecutor(AgentExecutor):
-    """ Class to call in order the flower agent """
+class FoodAgentExecutor(AgentExecutor):
+    """ Function to call in order the food agent """
 
     def __init__(self):
-        self.agent = FlowerAgent()
+        self.agent = FoodAgent()
 
     async def execute(
         self,

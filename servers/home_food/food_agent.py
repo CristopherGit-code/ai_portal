@@ -5,48 +5,43 @@ from langchain_core.tools import tool
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
 from servers.util.oci_client import LLM_Client
-from modules.util.lang_fuse import FuseConfig
 
 oci_client = LLM_Client()
 memory = MemorySaver()
 
-fuse_tracer = FuseConfig()
-id = fuse_tracer.generate_id()
-trace_handler = fuse_tracer.get_handler()
+@tool
+def find_restaurants(day:str, hour:str)->str:
+    """ Finds available restaurants from an specific day and hour """
+    response = f"List of available places:\nBrazas: tacos\nNouvelle France: european food\nBright star:Chinese food"
+    return response
 
 @tool
-def list_flowers()->list[str]:
-    """ Returns the available flowers to make orders to store """
-    flowers = ["roses","daisy","tulip","sunflower"]
-    return flowers
+def purchase_snacks(type:str,day:str,hour:str)->str:
+    """ Purchase the type of snacks for a given day and date """
+    response = f"Purchased snacks of {type} for the date requested!"
+    return response
 
 @tool
-def create_bunch(flowers:str)->str:
-    """ Given a list of flowers creates a great bunch of flowers to order """
-    order = f"Created bunch of flowers using {flowers} as base"
-    return order
+def find_canapes(day:str)->list[str]:
+    """ Returns the list of available canapes for a given day """
+    canapes = ["snadwich","fruit","caviar","gummy bears","red wine preparation"]
+    return canapes
 
-@tool 
-def confirm_order(day:str,flowers:str)->str:
-    """ Given the day and the list of flowers confirms an order for a bunch of flowers """
-    return f"Order for {day} using {flowers} as base, confirmed and ready to pick up"
-
-class FlowerAgent:
-    """ Agent expert in purchasing, ordering and create bunch of flowers for dates """
+class FoodAgent:
+    """ Agent expert in getting food options, snacks, canapes, can purchase food orders """
 
     SYSTEM_INSTRUCTION = (
-        "You are an expert purchase, order, create bunch of flowers for dates.\n"
+        "You are an expert in finding available restaurants, purchasing snacks and getting available canapes for food options.\n"
         "You have different tools availabe to complete user requests.\n"
-        "DO NOT address queries UNRELATED TO flowers, bunch of flowers, orders for dates, DO NOT MAKE UP information and refuse to answer politely if the query is not related to flowers.\n"
-        "If the query has different requests, just answer the request related to cinema, and reply that the other requests are out of your capacity.\n"
+        "DO NOT address queries UNRELATED TO FOOD, DO NOT MAKE UP information and refuse to answer politely if the query is not related to FOOD.\n"
+        "If the query has different requests, just answer the request related to food, and reply that the other requests are out of your capacity.\n"
         "ALWAYS answer in LESS than 50 words."
     )
 
     def __init__(self):
         self.model = oci_client.build_llm_client()
-        self.tools = [list_flowers,create_bunch,confirm_order]
-        # self.tools = [list_flowers]
-        self.flower_agent = create_react_agent(
+        self.tools = [find_restaurants,find_canapes,purchase_snacks]
+        self.food_agent = create_react_agent(
             model=self.model,
             tools=self.tools,
             checkpointer=memory,
@@ -55,10 +50,10 @@ class FlowerAgent:
 
     async def stream(self,query,context_id)-> AsyncIterable[dict[str,Any]]:
         inputs = {'messages': [('user', query)]}
-        config = {'configurable': {'thread_id': context_id},'callbacks':[trace_handler],'metadata':{'langfuse_session_id':id}}
+        config = {'configurable': {'thread_id': context_id}}
         final_response = []
         try:
-            for chunk in self.flower_agent.stream(inputs,config,stream_mode="values"):
+            for chunk in self.food_agent.stream(inputs,config,stream_mode="values"):
                 message = chunk['messages'][-1]
                 final_response.append(message.content)
                 if isinstance(message,AIMessage):

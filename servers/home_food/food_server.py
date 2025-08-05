@@ -12,9 +12,8 @@ from a2a.server.tasks import (
 )
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
-from servers.flower.flower_agent import FlowerAgent
-from servers.flower.flower_executor import FlowerAgentExecutor
-
+from servers.home_food.food_agent import FoodAgent
+from servers.home_food.food_executor import FoodAgentExecutor
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -26,45 +25,45 @@ def main(host,port):
     try:
         capabilities = AgentCapabilities(streaming=True,push_notifications=True)
         
-        list_flowers = AgentSkill(
-            id="list_flowers",
-            name="List available flowers to create bunch of flowers",
-            description="Helps the agent to know all the available flowers to create a bunch of flowers",
-            tags=["date","day","decoration","flowers","list"],
-            examples=["Which are the flower options?"]
+        find_restaurants = AgentSkill(
+            id="find_restaurants",
+            name="Find available restaurants",
+            description="Finds available restaurants from an specific day and hour",
+            tags=["date","day","food","restaurants","list"],
+            examples=["Which are the restaurants for Sunday 3 pm?"]
         )
-        confirm_order = AgentSkill(
-            id="confirm_flower_order",
-            name="Confirm the flower order",
-            description="Helps the agent to confirm the flower order depending on flower and day selected",
-            tags=["date","day","flower","buy"],
-            examples=["Could you confirm the flowers for Sunday?"]
+        purchase_snacks = AgentSkill(
+            id="purchase_snacks",
+            name="Purchase specific snacks",
+            description="Purchase the type of snacks for a given day and date",
+            tags=["date","day","buy","snacks"],
+            examples=["could you buy fancy snacks for Sunday at 3 pm?"]
         )
 
-        create_bunch = AgentSkill(
-            id="create_bunch",
-            name="Creates a custom bunch with the flowers that are available",
-            description="Helps the agent create a new bunch of flowers depending on the selected ones.",
-            tags=["date","day","flower","buy"],
-            examples=["Could you create a flower decoration with [roses,daisis, tulips]?"]
+        find_canapes = AgentSkill(
+            id="find_canapes",
+            name="Find canapes for a day",
+            description="Returns the list of available canapes for a given day",
+            tags=["date","day","list","food","canapes"],
+            examples=["Could you find some canapes for Saturday?"]
         )
         
         agent_card = AgentCard(
-            name="Flower agent",
-            description="Helps user buy, send and receive flower orders for dates",
+            name="Food agent",
+            description="Agent expert in getting food options, snacks, canapes, can purchase food orders",
             url=f"http://{host}:{port}/",
             version="1.0.0",
-            default_input_modes=FlowerAgent.SUPPORTED_CONTENT_TYPES,
-            default_output_modes=FlowerAgent.SUPPORTED_CONTENT_TYPES,
+            default_input_modes=FoodAgent.SUPPORTED_CONTENT_TYPES,
+            default_output_modes=FoodAgent.SUPPORTED_CONTENT_TYPES,
             capabilities=capabilities,
-            skills=[list_flowers,confirm_order,create_bunch]
+            skills=[find_restaurants,purchase_snacks,find_canapes]
         )
 
         httpx_client = httpx.AsyncClient()
         push_config_store = InMemoryPushNotificationConfigStore()
         push_sender = BasePushNotificationSender(httpx_client=httpx_client,config_store=push_config_store)
         request_handler = DefaultRequestHandler(
-            agent_executor=FlowerAgentExecutor(),
+            agent_executor=FoodAgentExecutor(),
             task_store=InMemoryTaskStore(),
             push_config_store=push_config_store,
             push_sender= push_sender

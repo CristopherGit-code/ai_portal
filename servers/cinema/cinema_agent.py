@@ -41,7 +41,7 @@ class CinemaAgent:
     def __init__(self):
         self.model = oci_client.build_llm_client()
         self.tools = [find_movie_function,buy_tickets,list_movies]
-        self.art_agent = create_react_agent(
+        self.cinema_agent = create_react_agent(
             model=self.model,
             tools=self.tools,
             checkpointer=memory,
@@ -53,7 +53,7 @@ class CinemaAgent:
         config = {'configurable': {'thread_id': context_id}}
         final_response = []
         try:
-            for chunk in self.art_agent.stream(inputs,config,stream_mode="values"):
+            for chunk in self.cinema_agent.stream(inputs,config,stream_mode="values"):
                 message = chunk['messages'][-1]
                 final_response.append(message.content)
                 if isinstance(message,AIMessage):
