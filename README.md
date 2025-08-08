@@ -7,11 +7,13 @@ Full integration on complex planning agent flow, includes verification of query 
 
 ## Features
 
+- [Simple UI](modules/UI/index.html) Front interface for the user to interact with the application and receive the modules in response
 - [Main Chain](modules/graph/layout_graph.py) Main chain manager with big picture graph to call each step of the agent application
 - [Chain Agents](modules/cluster/) Different agent modules with own instructions, functions and extra steps to complete tasks. This agents are in charge of manage the different steps of the chain and create the different calls through the complete application
-- [Layout agent](modules/cluster/layout.py) main parallel call agent that indicates the expertise modules to create a sample plan to address the user query
+- [Layout agent](modules/cluster/layout_builder.py) main parallel call agent that indicates the expertise modules to create a sample plan to address the user query
 - [Executor](modules/cluster/executor.py) Agent with the instruction to execute the different plans, decide which agents are relevant and wrap up all the necessary responses
-- [servers](servers) Different servers with AI agents capable to connect via A2A protocol, used for running the tasks assigned by the executor agent. Currently out of the chain, but planned to add during executor agent call to complete the requests
+- [A2A servers](remote) Different servers with AI agents capable to connect via A2A protocol, used for running the tasks assigned by the executor agent. Currently out of the chain, but planned to add during executor agent call to complete the requests
+- [MCP](remote/mcp/servers/) Two different MCP servers to connect with real weather data and manage file system.
 
 ## Setup
 
@@ -19,11 +21,43 @@ Full integration on complex planning agent flow, includes verification of query 
 2. Create .env file to set the environment variables for OCI setup (also mutable to other LLM providers given API key)
     - Ensure to modify the file [yaml](modules/util/config/config.yaml) to add routes and variables
     - Check the other files in servers folder
-3. Run the different servers from the server folder and ensure the ports are the same selected
-4. Run from the file [Layout graph](modules/graph/layout_graph.py), this will wait for a user query and show some logging for the application process
-4. Set up langfuse in [fuse_config](modules/util/lang_fuse.py), requires cloud or VM langfuse server host to send the tracing and catch all the entries during the application run
+3. Run first the MCP servers from [MCP](remote/mcp/servers/) and ensure the ports are corresponding
+4. Run the main A2A agents and servers from [A2A servers](remote). Each folder contains its respective agent, executor and A2A server to run
+5. Ensure the [portal.py](portal.py) file is set and making the right function call to the main chain. Run the uvicorn server.
+6. Once the portal is up, go to [Index](modules/UI/index.html) and run the ```HTML``` in browser.
+7. Send a query and wait for the UI components to display.
+8. For langfuse tracing ensure to modify the ```.env``` file and add the necessary keys inside the configuration from main chain and servers.
 
 ## Basic walkthrough
 
-- [Demo video](walkthrough/AI_planning_app_demo.mp4)
-- [Architecture](walkthrough/Ai_portal_w1.png)
+### Week 2 (Add MCP, A2A connections and lite front layer):
+
+- [Demo video](walkthrough/MCP_AI_Portal_Demo_week2.mp4)
+- [Architecture](walkthrough/AI_portal%20MCP_week2.png)
+
+### Week 1 (Main chain logic setup):
+
+- [Demo video](walkthrough/AI_planning_app_demo_week1.mp4)
+- [Architecture](walkthrough/Ai_portal_week1.png)
+
+> [!NOTE]  
+> TS folder intend to be another way to connect the python main chain with the front.
+> TS includes an MCP client that calls the main chain and generates a TS response that could be read by the front.
+> Missing an endpoint implementation, but possible integration form python -> TypeScript -> Front
+> TS code for test purposes only
+
+## Sample core details
+
+- [Portal](portal.py) uses the function ```call_main_graph``` to start the process, with the user query in it.
+- [layout_graph.py](modules/main_graph/layout_graph.py) receives the call and implements an async streaming response method using ```async for chunk in self.graph.astream```.
+
+This is calling the ```self.graph``` object which is a _langgraph compiled graph_ object, in charge of all the chain management and responses.
+
+```build_main_graph``` function in the same file is in charge of creating the logic and call the functions from the different agents in the chain
+- [agents.py](modules/cluster/agents.py) holds all the helper agents that have access to the information from the A2A and MCP servers.
+
+This agents have the single tool ```send_task2_name_expert``` which depending on the name of the agent will send an a2a request to the expert agent and will wait for the response from the agent.
+
+The executor agent has an extra layer, it uses the function ```call_name_agent``` to call each one of the helper agents in need, then those helper agents can use the ```send_task2_name_expert``` tool to actually complete the workflow.
+
+- After all the calls are done, the python portal server returns the final compound of the response so the JavaScript code generates the different UI components.
