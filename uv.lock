@@ -28,6 +28,7 @@ source = { virtual = "." }
 dependencies = [
     { name = "a2a-sdk" },
     { name = "envyaml" },
+    { name = "fastapi" },
     { name = "langchain" },
     { name = "langchain-community" },
     { name = "langchain-mcp-adapters" },
@@ -44,6 +45,7 @@ dependencies = [
 requires-dist = [
     { name = "a2a-sdk", specifier = ">=0.2.16" },
     { name = "envyaml", specifier = ">=1.10.211231" },
+    { name = "fastapi", specifier = ">=0.116.1" },
     { name = "langchain", specifier = ">=0.3.27" },
     { name = "langchain-community", specifier = ">=0.3.27" },
     { name = "langchain-mcp-adapters", specifier = ">=0.1.9" },
