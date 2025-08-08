@@ -79,9 +79,8 @@ class ChainManager:
 
         self.graph = main_graph_builder.compile()
 
-    async def call_main_graph(self):
+    async def call_main_graph(self, user_input:str)->str:
         try:
-            user_input = input("USER: ")
             final_response = []
             async for chunk in self.graph.astream( {"messages": [{"role": "user", "content": user_input}],'status':'plan'},
                 {'configurable': {'thread_id': "1"},'callbacks':[trace_handler],'metadata':{'langfuse_session_id':id}},

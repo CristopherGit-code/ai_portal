@@ -8,6 +8,7 @@ from langgraph.prebuilt import create_react_agent
 from remote.util.oci_client import LLM_Client
 import logging
 import asyncio
+from remote.util.lang_fuse import FuseConfig
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(name=f'MCP_WEATHER.{__name__}')
@@ -28,6 +29,10 @@ client = MultiServerMCPClient(metadata)
 
 oci_client = LLM_Client()
 memory = MemorySaver()
+
+fuse_tracer = FuseConfig()
+id = fuse_tracer.generate_id()
+trace_handler = fuse_tracer.get_handler()
 
 class WeatherAgent:
     """ Agent expert in getting weather forecast from US states and weather alerts for us states """
@@ -55,7 +60,7 @@ class WeatherAgent:
 
     async def stream(self,query,context_id)-> AsyncIterable[dict[str,Any]]:
         inputs = {'messages': [('user', query)]}
-        config = {'configurable': {'thread_id': context_id}}
+        config = {'configurable': {'thread_id': context_id},'callbacks':[trace_handler],'metadata':{'langfuse_session_id':id}}
         final_response = []
         try:
             async for chunk in self.weather_agent.astream(inputs,config,stream_mode="values"):

@@ -58,7 +58,7 @@ class FileAgent:
         config = {'configurable': {'thread_id': context_id}}
         final_response = []
         try:
-            for chunk in self.file_agent.stream(inputs,config,stream_mode="values"):
+            async for chunk in self.file_agent.astream(inputs,config,stream_mode="values"):
                 message = chunk['messages'][-1]
                 final_response.append(message.content)
                 if isinstance(message,AIMessage):

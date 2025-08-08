@@ -18,18 +18,18 @@ class FuseConfig:
     def _init(self):
         if self._initialized:
             return
-        self.settings = Settings(r"C:\Users\Cristopher Hdz\Desktop\ai_portal\servers\util\config\config.yaml")   
+        self.settings = Settings(r"C:\Users\Cristopher Hdz\Desktop\ai_portal\remote\util\config\config.yaml")   
         """ VM host """
-        Langfuse(
-            public_key=self.settings.langfuse.PUBLIC_VM_KEY,
-            secret_key=self.settings.langfuse.SECRET_VM_KEY,
-            host=self.settings.langfuse.VM_HOST
-        )
         # Langfuse(
-        #     public_key=self.settings.langfuse.PUBLIC_OCI_KEY,
-        #     secret_key=self.settings.langfuse.SECRET_OCI_KEY,
-        #     host=self.settings.langfuse.OCI_HOST
+        #     public_key=self.settings.langfuse.PUBLIC_VM_KEY,
+        #     secret_key=self.settings.langfuse.SECRET_VM_KEY,
+        #     host=self.settings.langfuse.VM_HOST
         # )
+        Langfuse(
+            public_key=self.settings.langfuse.PUBLIC_OCI_KEY,
+            secret_key=self.settings.langfuse.SECRET_OCI_KEY,
+            host=self.settings.langfuse.OCI_HOST
+        )
         self.langfuse_handler = CallbackHandler()
         self._initialized = True
 

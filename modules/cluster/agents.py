@@ -411,6 +411,82 @@ class WeatherAgent:
         ans = response['messages'][-1].content
         
         return {"messages": [{"role": "assistant", "content": ans}],'plans':ans}
+    
+@tool
+async def send_task2_file_expert(agent_name:str,full_context:str)->str:
+    """ Sends a task to a file_agent with capabilities to: 
+    manage user files
+    create new files, write content to new files, delete files, rename files, search for a file.
+    Agent name: file_agent
+    """
+    response = await call_a2a_agent(agent_name,full_context)
+    return response
+
+class FileAgent:
+    """ Agent that is expert in managing user files for example, create, write, delete, rename files """
+
+    _instance = None
+    _initialized = False
+
+    SYSTEM_INSTRUCTION = (
+        """
+        You are a file agent with specific expertise in files and local file management, tool access for file related tasks. Follow these guidelines for every incoming request:
+
+        1. Plan Request Handling:
+        - If the message asks you to come up with a plan or propose a solution:
+        - Do not make any tool calls or perform actions.
+        - Clearly acknowledge your own main skills, capabilities, and area of expertise.
+        - Generate a detailed plan for addressing the user query, focusing only on tasks within your actual expertise and using tools you can genuinely access.
+        - If the user query includes topics outside your main expertise, only address the sections related to your scope—ignore unrelated subjects.
+
+        2. Execute/Task Request Handling
+        - If the message instructs you to execute a plan or follow a series of tasks:
+        - Begin work immediately using ONLY your available tools and within your expertise.
+        - For tasks involving multiple topics, address strictly the portions that align with your domain.
+        - Ignore unrelated or out-of-scope subjects in the request.
+        
+        User Interaction Minimization:
+        - Reduce unnecessary human interaction by acting on behalf of the user wherever appropriate.
+        - Always clearly inform the user of any decisions or actions you have taken on their behalf.
+        
+        GENERAL RULES:
+        - Always act only within your true capabilities and main area of expertise.
+        - If the request is few related or not related to your scope, inform in main scope that your apportation to the plan or tasks is not relevant to the user query.
+        - Never attempt to address topics or perform actions outside your practical scope or tool access.
+        - Clearly communicate what portion of the query you are addressing and what is omitted due to scope limitations.
+        - ALWAYS use the tools you have available to answer the execution process
+        - If the tool results in an error, DO NOT make up information, just inform the agent can not respond
+        """
+    )
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(FileAgent,cls).__new__(cls)
+        return cls._instance
+    
+    def __init__(self):
+        if not self._initialized:
+            self.name = "file_agent"
+            self.oci_client = LLM_Open_Client()
+            self.model = self.oci_client.build_llm_client()
+            self.memory = MemorySaver()
+            self.tools = [send_task2_file_expert]
+            self.agent = create_react_agent(
+                model=self.model,
+                tools=self.tools,
+                checkpointer=self.memory,
+                prompt=self.SYSTEM_INSTRUCTION
+            )
+            FileAgent._initialized = True
+
+    def file_plan(self,state:LayoutState)->LayoutState:
+        """ Generates a plan for the file agent """
+
+        query = state['messages'][-1].content
+        response = self.agent.invoke({"messages": [{"role": "assistant", "content": query}]})
+        ans = response['messages'][-1].content
+        
+        return {"messages": [{"role": "assistant", "content": ans}],'plans':ans}
 
 @tool
 async def call_cinema_agent(instruction:str,context:str)->str:
@@ -448,6 +524,16 @@ async def call_weather_agent(instruction:str,context:str)->str:
 
     return response['messages'][-1].content
     
+@tool
+async def call_file_agent(instruction:str,context:str)->str:
+    """ Calls the file agent with the specific instructions and context given """
+
+    file_agent = FileAgent()
+    response = await file_agent.agent.ainvoke({"messages": [{"role": "user", "content": f"Given the context: {context}, work to fulfill the request: {instruction}. Do not make up information and provide all the data that you hava available"}]})
+
+    return response['messages'][-1].content
+    
+
 class WorkerManager:
     """ Module to manage worker agents and keep the connections """
     _instance = None
@@ -464,16 +550,19 @@ class WorkerManager:
             self.food_agent = FoodAgent()
             self.decoration_agent = DecorationAgent()
             self.weather_agent = WeatherAgent()
+            self.file_agent = FileAgent()
             self.agent_list = [
                 (self.cinema_agent.name,self.cinema_agent.cinema_plan),
                 (self.food_agent.name,self.food_agent.food_plan),
                 (self.decoration_agent.name,self.decoration_agent.decoration_plan),
                 (self.weather_agent.name,self.weather_agent.weather_plan),
+                (self.file_agent.name,self.file_agent.file_plan),
             ]
             self.agent_tools:list[BaseTool] = [
                 call_cinema_agent,
                 call_food_agent,
                 call_decoration_agent,
-                call_weather_agent
+                call_weather_agent,
+                call_file_agent
             ]
             WorkerManager._initialized = True

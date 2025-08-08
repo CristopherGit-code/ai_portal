@@ -1,0 +1,29 @@
+{
+  "name": "ai_portal",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "> [!NOTE]  \r > Last update 8-05-2025",
+  "main": "index.js",
+  "scripts": {
+    "start": "ts-node --esm ts_server.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CristopherGit-code/ai_portal.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/CristopherGit-code/ai_portal/issues"
+  },
+  "homepage": "https://github.com/CristopherGit-code/ai_portal#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.2"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  }
+}

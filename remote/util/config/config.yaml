@@ -13,5 +13,8 @@ langfuse:
   SECRET_VM_KEY:  ${SECRET_VM_KEY}
   PUBLIC_VM_KEY:  ${PUBLIC_VM_KEY}
   VM_HOST:  ${VM_HOST}
+  SECRET_OCI_KEY:  ${SECRET_OCI_KEY}
+  PUBLIC_OCI_KEY:  ${PUBLIC_OCI_KEY}
+  OCI_HOST:  ${OCI_HOST}
 mcp:
   path: C:/Users/Cristopher Hdz/Desktop/Test/mcp_step/app/src/config/server.json
