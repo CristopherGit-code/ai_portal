@@ -1,0 +1,6 @@
+{
+    "files":{
+        "url": "http://localhost:5000/mcp",
+        "transport": "streamable_http"
+    }
+}

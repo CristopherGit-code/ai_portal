@@ -14,6 +14,8 @@ class VerificationFormat(BaseModel):
     status: Literal['complete', 'reject'] = 'reject'
 
 class VerificationAgent:
+    """ Verification agent in charge of validating the queries send to the chain """
+
     _instance = None
     _initialized = False
 

@@ -15,7 +15,7 @@ id = fuse_tracer.generate_id()
 trace_handler = fuse_tracer.get_handler()
 
 class ExecutorAgent:
-    """ Agent expert in planning cinema visits, offers movie information, functions, and ticket purchase """
+    """ Agent expert in executing plans, adding tasks and working with agents to solve the user query """
 
     _instance = None
     _initialized = False
