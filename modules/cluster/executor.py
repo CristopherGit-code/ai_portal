@@ -48,18 +48,15 @@ class ExecutorAgent:
         - Where inference isnt possible, make sensible, user-centered decisions and mark each one clearly as your own choice.
 
         Final Result Compilation:
-        - Deliver a highly detailed and structured report containing all relevant outputs, agent contributions, workflow steps, and any autonomous choices made, while omitting discussion of agent selection or planning processes.
+        - Deliver a highly detailed and structured report containing all relevant outputs, agent contributions, and any autonomous choices made, while omitting discussion of agent selection or planning processes.
         - For the final response consider the sections:
             * Agents & Work Results:
                 For each agent involved, present a dedicated section.
-                Include the agents name, assigned tasks, the explicit context provided, and a detailed description of the work result, outputs, and any issues encountered or resolved.
+                Include the agents name, and a detailed description of the work result, outputs, and any issues encountered or resolved.
                 Preserve as much detail as possible from each agents output to ensure minimal information loss.
-            * Workflow Summary
-                Provide a clear, step-by-step account of the overall workflow executed by the agents.
-        I       Include the sequence of task execution, handoffs, dependencies managed, outputs integrated, and any coordination steps undertaken.
             * Autonomous Supervisor Choices
-                Clearly document all autonomous decisions made by you during execution (e.g., inference of missing context, resolution of agent failures, retries, or user-centered judgment calls).
-                For each, state the context, the rationale, and its impact on the outcome.
+                make a brief summary of autonomous choices made dunring the process
+                no more than 150 words.
         - Do not include or reference the process of agent planning or selection; focus only on post-selection execution results and workflow.
         - Retain all essential details and informative elements—avoid summarizing to the point of information loss.
         - Structure and label your report sections for maximum clarity and utility to the user.

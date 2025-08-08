@@ -13,10 +13,6 @@ from langgraph.graph import add_messages
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(name=f"LAYOUT_GRAPH.{__name__}")
 
-fuse_tracer = FuseConfig()
-id = fuse_tracer.generate_id()
-trace_handler = fuse_tracer.get_handler()
-
 class LayoutState(MessagesState):
     """ change the status according to execution steps """
     status: str
@@ -33,10 +29,14 @@ class ChainManager:
     
     def __init__(self):
         if not self._initialized:
+            self.fuse_tracer = FuseConfig()
+            self.trace_handler = self.fuse_tracer.get_handler()
             self.verification_agent = VerificationAgent()
             self.planner_hub = PlannerAgent()
             self.executor_hub = ExecutorAgent()
             self.workers_hub = WorkerManager()
+            self.build_planner_graph()
+            self.build_executor_graph()
             self.build_main_graph()
             ChainManager._initialized = True
     
@@ -83,7 +83,7 @@ class ChainManager:
         try:
             final_response = []
             async for chunk in self.graph.astream( {"messages": [{"role": "user", "content": user_input}],'status':'plan'},
-                {'configurable': {'thread_id': "1"},'callbacks':[trace_handler],'metadata':{'langfuse_session_id':id}},
+                {'configurable': {'thread_id': "1"},'callbacks':[self.trace_handler],'metadata':{'langfuse_session_id':self.fuse_tracer.generate_id()}},
                 stream_mode="values",
                 subgraphs=True
             ):
@@ -98,6 +98,85 @@ class ChainManager:
         except Exception as e:
             logger.info(f'General error: {e}')
             return f'General error: {e}'
+    
+    def build_planner_graph(self):
+        main_graph_builder = StateGraph(LayoutState)
+
+        main_graph_builder.add_node("verify",self.verification_agent.verify_query)
+        main_graph_builder.add_node("planner",self.planner_hub.call_planner_agent)
+        main_graph_builder.add_node("agent_select",self.planner_hub.call_planner_agent)
+
+        for agent in self.workers_hub.agent_list:
+            main_graph_builder.add_node(agent[0],agent[1])
+
+        main_graph_builder.add_node("synthesizer",self.synthesizer)
+
+        main_graph_builder.add_edge(START,"verify")
+        
+        main_graph_builder.add_conditional_edges(
+            "verify", self.verification_agent.verification_check, {"Fail": END, "Pass": "planner"}
+        )
+
+        for agent in self.workers_hub.agent_list:
+            main_graph_builder.add_edge("planner",agent[0])
+            main_graph_builder.add_edge(agent[0],"synthesizer")
+
+        main_graph_builder.add_edge("synthesizer","agent_select")
+        main_graph_builder.add_edge("agent_select",END)
+
+        self.planner_graph = main_graph_builder.compile()
+
+    def build_executor_graph(self):
+        main_graph_builder = StateGraph(LayoutState)
+
+        main_graph_builder.add_node("executor",self.executor_hub.call_executor_agent)
+        main_graph_builder.add_edge(START,"executor")
+        main_graph_builder.add_edge("executor",END)
+
+        self.executor_graph = main_graph_builder.compile()
+
+    async def call_plan_phase(self,user_input:str)->str:
+        id = self.fuse_tracer.generate_id()
+        try:
+            final_response = []
+            async for chunk in self.planner_graph.astream( {"messages": [{"role": "user", "content": user_input}],'status':'plan'},
+                {'configurable': {'thread_id': id},'callbacks':[self.trace_handler],'metadata':{'langfuse_session_id':id}},
+                stream_mode="values",
+                subgraphs=True
+            ):
+                try:
+                    logger.debug("============ Chunk response ==========\n")
+                    logger.debug(chunk[-1])
+                    final_response.append(chunk[-1]['messages'][-1].content)
+                except Exception as p:
+                    final_response.append(f"Error in response: {p}")
+            final_text = f"PLAN AND SELECTION:\n{final_response[-1]}"
+            return final_text
+        except Exception as e:
+            logger.info(f'General error: {e}')
+            return f'General error: {e}'
+        
+    async def call_executor_phase(self,graph_input:str)->str:
+        id = self.fuse_tracer.generate_id()
+        try:
+            final_response = []
+            async for chunk in self.executor_graph.astream( {"messages": [{"role": "assistant", "content": graph_input}],'status':'execute'},
+                {'configurable': {'thread_id': id},'callbacks':[self.trace_handler],'metadata':{'langfuse_session_id':id}},
+                stream_mode="values",
+                subgraphs=True
+            ):
+                try:
+                    logger.debug("============ Chunk response ==========\n")
+                    logger.debug(chunk[-1])
+                    final_response.append(chunk[-1]['messages'][-1].content)
+                except Exception as p:
+                    final_response.append(f"Error in response: {p}")
+            final_text = f"FINAL PLAN OVERVIEW:\n{final_response[-1]}"
+            return final_text
+        except Exception as e:
+            logger.info(f'General error: {e}')
+            return f'General error: {e}'
+
 
 async def main():
     chain = ChainManager()

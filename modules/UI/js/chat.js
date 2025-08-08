@@ -6,6 +6,6 @@ function createComponent(text){
 }
 
 const app = document.getElementById('chat');
-['This is an example','Of how to get a chat','From the JS code'].forEach(label => {
+['--Model response--'].forEach(label => {
     app.appendChild(createComponent(label))
 });

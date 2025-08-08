@@ -10,8 +10,24 @@ mcp = FastMCP(
 )
 
 @mcp.tool()
-async def main_chain(query:str)->str:
-    """ Returns the response to the query """
+async def plan_phase(query:str)->str:
+    """ Returns the plan response for the query """
+    chain = ChainManager()
+    response = await chain.call_plan_phase(query)
+
+    return response
+
+@mcp.tool()
+async def execute_phase(query:str)->str:
+    """ Returns the final execution flow """
+    chain = ChainManager()
+    response = await chain.call_executor_phase(query)
+
+    return response
+
+@mcp.tool()
+async def call_main_graph(query:str)->str:
+    """ Calls complete graph """
     chain = ChainManager()
     response = await chain.call_main_graph(query)
 
