@@ -2,6 +2,7 @@ from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from modules.main_graph.layout_graph import ChainManager
 import uvicorn
+import json
 
 app = FastAPI()
 
@@ -14,12 +15,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+chain = ChainManager()
+
+def json_response_parser(response):
+    try:
+        data = json.loads(response)
+        return data
+    except json.JSONDecodeError as e:
+        print(e)
+        return {"error":e}
+
 async def call_main_graph(query:str)->str:
     """ Calls complete graph """
-    chain = ChainManager()
     response = await chain.call_main_graph(query)
-
-    return response
+    data = json_response_parser(response)
+    return data
 
 @app.get("/get-response")
 async def get_response(query:str = Query(...,description="User query to agent")):

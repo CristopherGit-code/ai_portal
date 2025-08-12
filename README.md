@@ -1,7 +1,7 @@
 # AI party/meeting planning application
 
 > [!NOTE]  
-> Last update 8-05-2025
+> Last update 8-09-2025
 
 Full integration on complex planning agent flow, includes verification of query scope, parallel agent calling, planning, selection and execution or relevant tasks to address user query.
 
@@ -61,3 +61,5 @@ This agents have the single tool ```send_task2_name_expert``` which depending on
 The executor agent has an extra layer, it uses the function ```call_name_agent``` to call each one of the helper agents in need, then those helper agents can use the ```send_task2_name_expert``` tool to actually complete the workflow.
 
 - After all the calls are done, the python portal server returns the final compound of the response so the JavaScript code generates the different UI components.
+
+<!-- https://www.chartjs.org/docs/latest/ -->

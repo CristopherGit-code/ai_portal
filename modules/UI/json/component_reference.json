@@ -1,0 +1,42 @@
+[
+    {
+        "type":"card",
+        "props":{
+            "title":"card title",
+            "content": "brief card content"
+        }
+    },
+    {
+        "type":"chart",
+        "props":{
+            "title":"chart tittle",
+            "chartType":"type of chart: [bar,pie]",
+            "data":["d1","d2","d3"],
+            "labels":["l1","l2","l3"]
+        }
+    },
+    {
+        "type":"table",
+        "props":{
+            "title":"table title",
+            "columns":[
+                {
+                    "header":"column header",
+                    "field":"datakey for header"
+                }
+            ],
+            "rows":[
+                {
+                    "datakey1":"value",
+                    "datakey2":"value",
+                    "datakey3":"value"
+                },
+                {
+                    "datakey1":"value",
+                    "datakey2":"value",
+                    "datakey3":"value"
+                }
+            ]
+        }
+    }
+]

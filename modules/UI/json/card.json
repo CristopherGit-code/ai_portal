@@ -1,0 +1,27 @@
+{
+    "title":"card_schema",
+    "description":"schema to generate the UI text card component",
+    "type":"object",
+    "properties":{
+        "component":{
+            "type":"string",
+            "description":"'card' should be component",
+            "enum":["card"]
+        },
+        "props":{
+            "type":"object",
+            "properties":{
+                "title":{
+                    "type":"string",
+                    "description":"title to give the text card"
+                },
+                "content":{
+                    "type":"string",
+                    "description":"card text or sumary from the context"
+                }
+            }
+        }
+    },
+    "additionalProperties": false,
+    "required": ["component", "props"]
+}

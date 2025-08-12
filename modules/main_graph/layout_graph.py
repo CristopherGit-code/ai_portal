@@ -6,6 +6,7 @@ from modules.cluster.planner import PlannerAgent
 from modules.cluster.executor import ExecutorAgent
 from modules.util.lang_fuse import FuseConfig
 from modules.cluster.agents import WorkerManager
+from modules.cluster.layout_builder import LayoutAgent
 from typing import Annotated
 from langchain_core.messages import AnyMessage
 from langgraph.graph import add_messages
@@ -35,8 +36,7 @@ class ChainManager:
             self.planner_hub = PlannerAgent()
             self.executor_hub = ExecutorAgent()
             self.workers_hub = WorkerManager()
-            self.build_planner_graph()
-            self.build_executor_graph()
+            self.layout_hub = LayoutAgent()
             self.build_main_graph()
             ChainManager._initialized = True
     
@@ -58,6 +58,7 @@ class ChainManager:
         main_graph_builder.add_node("planner",self.planner_hub.call_planner_agent)
         main_graph_builder.add_node("agent_select",self.planner_hub.call_planner_agent)
         main_graph_builder.add_node("executor",self.executor_hub.call_executor_agent)
+        main_graph_builder.add_node("layout",self.layout_hub.call_layout_builder)
 
         for agent in self.workers_hub.agent_list:
             main_graph_builder.add_node(agent[0],agent[1])
@@ -76,6 +77,7 @@ class ChainManager:
 
         main_graph_builder.add_edge("synthesizer","agent_select")
         main_graph_builder.add_edge("agent_select","executor")
+        main_graph_builder.add_edge("executor","layout")
 
         self.graph = main_graph_builder.compile()
 
@@ -93,90 +95,10 @@ class ChainManager:
                     final_response.append(chunk[-1]['messages'][-1].content)
                 except Exception as p:
                     final_response.append(f"Error in response: {p}")
-            final_text = f"MODEL RESPONSE:\n{final_response[-1]}"
-            return final_text
+            return final_response[-1]
         except Exception as e:
             logger.info(f'General error: {e}')
             return f'General error: {e}'
-    
-    def build_planner_graph(self):
-        main_graph_builder = StateGraph(LayoutState)
-
-        main_graph_builder.add_node("verify",self.verification_agent.verify_query)
-        main_graph_builder.add_node("planner",self.planner_hub.call_planner_agent)
-        main_graph_builder.add_node("agent_select",self.planner_hub.call_planner_agent)
-
-        for agent in self.workers_hub.agent_list:
-            main_graph_builder.add_node(agent[0],agent[1])
-
-        main_graph_builder.add_node("synthesizer",self.synthesizer)
-
-        main_graph_builder.add_edge(START,"verify")
-        
-        main_graph_builder.add_conditional_edges(
-            "verify", self.verification_agent.verification_check, {"Fail": END, "Pass": "planner"}
-        )
-
-        for agent in self.workers_hub.agent_list:
-            main_graph_builder.add_edge("planner",agent[0])
-            main_graph_builder.add_edge(agent[0],"synthesizer")
-
-        main_graph_builder.add_edge("synthesizer","agent_select")
-        main_graph_builder.add_edge("agent_select",END)
-
-        self.planner_graph = main_graph_builder.compile()
-
-    def build_executor_graph(self):
-        main_graph_builder = StateGraph(LayoutState)
-
-        main_graph_builder.add_node("executor",self.executor_hub.call_executor_agent)
-        main_graph_builder.add_edge(START,"executor")
-        main_graph_builder.add_edge("executor",END)
-
-        self.executor_graph = main_graph_builder.compile()
-
-    async def call_plan_phase(self,user_input:str)->str:
-        id = self.fuse_tracer.generate_id()
-        try:
-            final_response = []
-            async for chunk in self.planner_graph.astream( {"messages": [{"role": "user", "content": user_input}],'status':'plan'},
-                {'configurable': {'thread_id': id},'callbacks':[self.trace_handler],'metadata':{'langfuse_session_id':id}},
-                stream_mode="values",
-                subgraphs=True
-            ):
-                try:
-                    logger.debug("============ Chunk response ==========\n")
-                    logger.debug(chunk[-1])
-                    final_response.append(chunk[-1]['messages'][-1].content)
-                except Exception as p:
-                    final_response.append(f"Error in response: {p}")
-            final_text = f"PLAN AND SELECTION:\n{final_response[-1]}"
-            return final_text
-        except Exception as e:
-            logger.info(f'General error: {e}')
-            return f'General error: {e}'
-        
-    async def call_executor_phase(self,graph_input:str)->str:
-        id = self.fuse_tracer.generate_id()
-        try:
-            final_response = []
-            async for chunk in self.executor_graph.astream( {"messages": [{"role": "assistant", "content": graph_input}],'status':'execute'},
-                {'configurable': {'thread_id': id},'callbacks':[self.trace_handler],'metadata':{'langfuse_session_id':id}},
-                stream_mode="values",
-                subgraphs=True
-            ):
-                try:
-                    logger.debug("============ Chunk response ==========\n")
-                    logger.debug(chunk[-1])
-                    final_response.append(chunk[-1]['messages'][-1].content)
-                except Exception as p:
-                    final_response.append(f"Error in response: {p}")
-            final_text = f"FINAL PLAN OVERVIEW:\n{final_response[-1]}"
-            return final_text
-        except Exception as e:
-            logger.info(f'General error: {e}')
-            return f'General error: {e}'
-
 
 async def main():
     chain = ChainManager()

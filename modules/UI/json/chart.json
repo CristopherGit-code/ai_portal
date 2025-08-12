@@ -1,0 +1,72 @@
+{
+    "title": "chart_schema",
+    "description": "schema to generate the UI chart component",
+    "type": "object",
+    "properties": {
+        "component": {
+            "type": "string",
+            "description": "'chart' should be component",
+            "enum": [
+                "chart"
+            ]
+        },
+        "props": {
+            "type": "object",
+            "properties": {
+                "title": {
+                    "type": "string",
+                    "description": "title to give the chart"
+                },
+                "chartType": {
+                    "type": "string",
+                    "description": "chart type to build",
+                    "enum": [
+                        "bar",
+                        "pie"
+                    ]
+                },
+                "data": {
+                    "type": "array",
+                    "description": "data to include for each one of the labels in the chart",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "datakey": {
+                                "type": "integer",
+                                "description": "The name of the data key value to use, for example, 10,15,23"
+                            }
+                        },
+                        "additionalProperties": false,
+                        "required": [
+                            "name",
+                            "value"
+                        ]
+                    }
+                },
+                "labels": {
+                    "type": "array",
+                    "description": "labels to include for each one of the datakeys in the chart",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "label": {
+                                "type": "string",
+                                "description": "The name of the label to use, for example, name, age, id"
+                            }
+                        },
+                        "additionalProperties": false,
+                        "required": [
+                            "name",
+                            "value"
+                        ]
+                    }
+                }
+            }
+        }
+    },
+    "additionalProperties": false,
+    "required": [
+        "component",
+        "props"
+    ]
+}
