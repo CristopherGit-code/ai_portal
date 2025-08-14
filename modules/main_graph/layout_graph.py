@@ -68,7 +68,7 @@ class ChainManager:
         main_graph_builder.add_edge(START,"verify")
         
         main_graph_builder.add_conditional_edges(
-            "verify", self.verification_agent.verification_check, {"Fail": END, "Pass": "planner"}
+            "verify", self.verification_agent.verification_check, {"Fail": "layout", "Pass": "planner"}
         )
 
         for agent in self.workers_hub.agent_list:
