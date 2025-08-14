@@ -18,7 +18,7 @@ def list_decorations()->list[str]:
 @tool
 def confirm_order(day:str,hour:str,decoration:str)->str:
     """ Buy and confirm the decoration selected order for given day and hour """
-    response = f"Decoration order of {decoration} for {day},{hour}"
+    response = f"Decoration order of {decoration} for {day},{hour}. Total cost: $60.78"
     return response
 
 class DecorationAgent:

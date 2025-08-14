@@ -79,6 +79,7 @@ class LayoutAgent:
         For each section of the report (including every agent section and every autonomous decision section):
         - Use the context and details exactly as provided for that section.
         - Use your available tools to create a dedicated UI component using JSON Schema for that section.
+        - Always select at least two different UI components to display to give the user visual variety.
         - Do not summarize or alter the information—the full context and results of each section must be preserved.
         - When invoking tools, supply the context exactly as received for that section.
         - Receive and preserve the tools' responses as returned (verbatim JSON Schema).
@@ -90,6 +91,7 @@ class LayoutAgent:
         Guidelines:
         - Never summarize, edit, or omit details from the original context or tool outputs.
         - Each report section must map to exactly one UI component—no combining or splitting.
+        - Call at least two different UI component for visual variety for the user.
         - The final output must be a Python list containing the unmodified JSON Schema component outputs, ordered by user relevance.
         - Do not add, remove, or change anything in the tools JSON Schema outputs.
         - The completeness and fidelity of information in each section and component are paramount.

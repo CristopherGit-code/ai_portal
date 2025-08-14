@@ -111,7 +111,7 @@ async def call_a2a_agent(agent_name:str,message:str)->str:
 @tool
 async def send_task2_cinema_expert(agent_name:str,full_context:str)->str:
     """ Sends a task to a cinema_agent with capabilities to: 
-    find available cinema functions, purchase tickets and 
+    find available cinema functions, purchase tickets (including money usage) and 
     return a list of available movies. Agent is not capable to do tasks outside the cinema location.
     Agent name: cinema_agent
     """
@@ -187,7 +187,7 @@ class CinemaAgent:
 @tool
 async def send_task2_food_expert(agent_name:str,full_context:str)->str:
     """ Sends a task to a food_agent with capabilities to: 
-    find available food restaurants, purchase snacks and 
+    find available food restaurants, purchase snacks (including money usage) and 
     return a list of available canapes
     Agent name: food_agent
     """
@@ -264,7 +264,7 @@ class FoodAgent:
 async def send_task2_decoration_expert(agent_name:str,full_context:str)->str:
     """ Sends a task to a decoration_agent with capabilities to: 
     list decorations possible to borrow and
-    buy and confirm the order for decoration in a certan space
+    buy and confirm the order for decoration in a certan space (also including money usage)
     Agent name: decoration_agent
     """
     response = await call_a2a_agent(agent_name,full_context)
@@ -340,7 +340,7 @@ class DecorationAgent:
 async def send_task2_weather_expert(agent_name:str,full_context:str)->str:
     """ Sends a task to a weather_agent with capabilities to: 
     get weather alerts from US states in real time,
-    get forecast for US states in real time.
+    get forecast for US states in real time (two letter abreviation letter for state).
     Agent name: weather_agent
     """
     response = await call_a2a_agent(agent_name,full_context)

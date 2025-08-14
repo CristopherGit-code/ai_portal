@@ -25,18 +25,13 @@ function buildChart(props) {
   chart.height = 200
   container.appendChild(chart)
 
-  const data = props.data.map(item => item.datakey)
-  const labels = props.labels.map(item => item.label)
-  const type = props.chartType
-  const chartTitle = props.title
-
   new Chart(chart.getContext('2d'), {
-    type: type,
+    type: props.chartType,
     data: {
-      labels: labels,
+      labels: props.labels.map(item => item.label),
       datasets: [{
-        label: chartTitle,
-        data: data,
+        label: props.title,
+        data: props.data.map(item => item.datakey),
         backgroundColor: [
           '#ff6384', '#36a2eb', '#ffcd56', '#4bc0c0', '#9966ff', '#ff9f40',
           '#8bc34a', '#00bcd4', '#d84315'
@@ -45,13 +40,13 @@ function buildChart(props) {
     },
     options: {
       responsive: false,
-      plugins:{
-        title:{
-          display:true,
-          text:chartTitle
+      plugins: {
+        title: {
+          display: true,
+          text: props.title
         }
       },
-      scales: type === 'bar' ? {
+      scales: props.chartType === 'bar' ? {
         y: {
           beginAtZero: true
         }
@@ -83,19 +78,65 @@ function buildResponse(response) {
   }
 }
 
+// Loader for user -------
+
+let loaderInterval
+
+function showLoader(containerId = "modules") {
+  clearInterval(loaderInterval)
+
+  const container = document.getElementById(containerId);
+  if (!container) return
+
+  const phrases = [
+    "Validating phrase...",
+    "Getting agent plans...",
+    "Selecting best agents...",
+    "Doing awesome agent team up!",
+    "Great visuals comming..."
+  ]
+
+  let index = 0;
+  container.innerHTML = `
+    <div class="loader">
+      <div class="loader-dots"><span></span><span></span><span></span></div>
+      <p id="loader-text">${phrases[index]}</p>
+    </div>
+  `
+
+  loaderInterval = setInterval(() => {
+    if (index < phrases.length - 1) {
+      index++;
+      const textEl = document.getElementById("loader-text");
+      if (textEl) textEl.textContent = phrases[index];
+    }
+  }, 20000)
+}
+
+function hideLoader() {
+  clearInterval(loaderInterval)
+  loaderInterval = null
+}
+
+// ------------ END loader
+
 document.getElementById("sendBtn").addEventListener("click", async () => {
-  const userInput = document.getElementById("userInput").value;
+  const userInput = document.getElementById("userInput").value
+
+  showLoader() // just for visual representation
 
   if (!userInput.trim()) {
     alert("Please enter something")
-    return;
+    return
   }
 
   try {
     const response = await fetch(`http://localhost:8000/get-response?query=${encodeURIComponent(userInput)}`)
     const data = await response.json()
+    hideLoader()
     buildResponse(data.result)
   } catch (error) {
+    hideLoader()
     console.error("Error fetching data:", error)
     document.getElementById('response').textContent = error
   }

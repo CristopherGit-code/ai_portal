@@ -18,7 +18,7 @@ def find_restaurants(day:str, hour:str)->str:
 @tool
 def purchase_snacks(type:str,day:str,hour:str)->str:
     """ Purchase the type of snacks for a given day and date """
-    response = f"Purchased snacks of {type} for the date requested!"
+    response = f"Purchased snacks of {type} for the date requested! Total fee: $25.00"
     return response
 
 @tool

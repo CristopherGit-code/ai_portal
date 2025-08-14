@@ -18,7 +18,7 @@ def find_movie_function(day:str, movie:str)->str:
 @tool
 def buy_tickets(movie:str,day:str,hour:str)->str:
     """ Purchase the tickets for the given movie """
-    response = f"Purchased tickets for {movie}, at {day}, {hour}"
+    response = f"Purchased tickets for {movie}, at {day}, {hour}. Total cost: $37.99"
     return response
 
 @tool
