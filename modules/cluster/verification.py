@@ -31,13 +31,13 @@ class VerificationAgent:
 
     def __init__(self):
         if not self._initialized:
-            self.oci_client = LLM_Open_Client()
-            self.model = self.oci_client.build_llm_client()
-            self.memory = MemorySaver()
-            self.create_agent()
+            self._oci_client = LLM_Open_Client()
+            self._model = self._oci_client.build_llm_client()
+            self._memory = MemorySaver()
+            self._create_agent()
             VerificationAgent._initialized = True
 
-    def build_system_instruction(self):
+    def _build_system_instruction(self):
         self.SYSTEM_INSTRUCTION = (
         "You are a verification agent in charge of filtering harsh, rude, innapropiate or not topic related topic queries.\n"
         "The topics related to the agent functions are planning dates, parties, decoration, movies, flowers and general planning for dates, parties and meetings.\n"
@@ -45,20 +45,20 @@ class VerificationAgent:
         "In case the query is able to be solved by the supervisor, continue with the execution to answer the user."
     )
         
-    def create_agent(self):
-        self.build_system_instruction()
-        self.tools = []
-        self.verify_agent = create_react_agent(
-            model=self.model,
-            tools=self.tools,
-            checkpointer=self.memory,
+    def _create_agent(self):
+        self._build_system_instruction()
+        self._tools = []
+        self._verify_agent = create_react_agent(
+            model=self._model,
+            tools=self._tools,
+            checkpointer=self._memory,
             prompt=self.SYSTEM_INSTRUCTION,
             response_format=(self.FORMAT_INSTRUCTION,VerificationFormat)
         )
 
     def verify_query(self,state:MessagesState):
         """ Verifies the user query to be aligned to the topic """
-        response = self.verify_agent.invoke({"messages": [{"role": "user", "content": state["messages"][-1].content}]})
+        response = self._verify_agent.invoke({"messages": [{"role": "user", "content": state["messages"][-1].content}]})
         return {"messages": [{"role": "assistant", "content": response["structured_response"].status}]}
     
     def verification_check(self,state:MessagesState):

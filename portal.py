@@ -1,12 +1,12 @@
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
-from modules.main_graph.layout_graph import ChainManager
+from modules.chain.layout_graph import ChainManager
 import uvicorn
 import json
 
 app = FastAPI()
 
-# Not security rules for testing purposes
+# Missing out of test security rules
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  
@@ -18,6 +18,7 @@ app.add_middleware(
 chain = ChainManager()
 
 def json_response_parser(response):
+    """ Parsing the string / message state function to JSON """
     try:
         data = json.loads(response)
         return data
@@ -26,7 +27,7 @@ def json_response_parser(response):
         return {"error":e}
 
 async def call_main_graph(query:str)->str:
-    """ Calls complete graph """
+    """ Calls the complete graph """
     response = await chain.call_main_graph(query)
     data = json_response_parser(response)
     return data

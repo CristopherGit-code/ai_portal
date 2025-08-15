@@ -105,14 +105,14 @@ class LayoutAgent:
     
     def __init__(self):
         if not self._initialized:
-            self.oci_client = LLM_Open_Client()
-            self.model = self.oci_client.build_llm_client()
-            self.memory = MemorySaver()
-            self.tools = [build_card_schema,build_chart_schema]
-            self.layout_builder_agent = create_react_agent(
-                model=self.model,
-                tools=self.tools,
-                checkpointer=self.memory,
+            self._oci_client = LLM_Open_Client()
+            self._model = self._oci_client.build_llm_client()
+            self._memory = MemorySaver()
+            self._tools = [build_card_schema,build_chart_schema]
+            self._layout_builder_agent = create_react_agent(
+                model=self._model,
+                tools=self._tools,
+                checkpointer=self._memory,
                 prompt=self.SYSTEM_INSTRUCTION,
             )
             LayoutAgent._initialized = True
@@ -122,7 +122,7 @@ class LayoutAgent:
         logger.debug("\nEntered layout builder ===============\n")
 
         query = f"Current workflow report:\n {state['messages'][-1].content}"
-        response = await self.layout_builder_agent.ainvoke({"messages": [{"role": "assistant", "content": query}]})
+        response = await self._layout_builder_agent.ainvoke({"messages": [{"role": "assistant", "content": query}]})
 
         ans = response['messages'][-1].content
         logger.debug(str(ans))

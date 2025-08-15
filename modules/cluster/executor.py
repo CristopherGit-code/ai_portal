@@ -4,7 +4,7 @@ from modules.util.ociopen_ai import LLM_Open_Client
 import logging
 import asyncio
 from langgraph.graph import MessagesState
-from modules.cluster.agents import WorkerManager
+from modules.cluster.worker_manager import WorkerManager
 from modules.util.lang_fuse import FuseConfig
 
 logging.basicConfig(level=logging.DEBUG)
@@ -78,15 +78,15 @@ class ExecutorAgent:
     
     def __init__(self):
         if not self._initialized:
-            self.oci_client = LLM_Open_Client()
-            self.model = self.oci_client.build_llm_client()
-            self.memory = MemorySaver()
-            self.worker_hub = WorkerManager()
-            self.tools = self.worker_hub.agent_tools
-            self.executor_agent = create_react_agent(
-                model=self.model,
-                tools=self.tools,
-                checkpointer=self.memory,
+            self._oci_client = LLM_Open_Client()
+            self._model = self._oci_client.build_llm_client()
+            self._memory = MemorySaver()
+            self._worker_hub = WorkerManager()
+            self._tools = self._worker_hub.agent_tools
+            self._executor_agent = create_react_agent(
+                model=self._model,
+                tools=self._tools,
+                checkpointer=self._memory,
                 prompt=self.SYSTEM_INSTRUCTION,
             )
             ExecutorAgent._initialized = True
@@ -96,7 +96,7 @@ class ExecutorAgent:
         logger.debug("\nEntered executor ===============\n")
 
         query = f"Current agent plan selection and tasks\n: {state['messages'][-1].content}"
-        response = await self.executor_agent.ainvoke(
+        response = await self._executor_agent.ainvoke(
             {"messages": [{"role": "assistant", "content": query}]},
             {'configurable': {'thread_id': id},'callbacks':[trace_handler],'metadata':{'langfuse_session_id':id}}
         )

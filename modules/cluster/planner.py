@@ -4,7 +4,6 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.prebuilt import create_react_agent
 from modules.util.ociopen_ai import LLM_Open_Client
 import logging
-from modules.cluster.agents import WorkerManager
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(name=f"PLANNER_AGENT.{__name__}")
@@ -59,27 +58,26 @@ class PlannerAgent:
 
     def __init__(self):
         if not self._initialized:
-            self.workers_handler = WorkerManager()
-            self.oci_client = LLM_Open_Client()
-            self.model = self.oci_client.build_llm_client()
-            self.memory = MemorySaver()
-            self.tools = []
-            self.planner_agent = create_react_agent(
-                model=self.model,
-                tools=self.tools,
-                checkpointer=self.memory,
+            self._oci_client = LLM_Open_Client()
+            self._model = self._oci_client.build_llm_client()
+            self._memory = MemorySaver()
+            self._tools = []
+            self._planner_agent = create_react_agent(
+                model=self._model,
+                tools=self._tools,
+                checkpointer=self._memory,
                 prompt=self.SYSTEM_INSTRUCTION
             )
             PlannerAgent._initialized = True
 
     def call_planner_agent(self,state:PlannerState)->PlannerState:
-        logger.debug("=========== Entered layout calling")
+        logger.debug("=========== Entered planner calling")
         if state['status'] == 'plan':
             query = state['messages'][0].content
         else:
             query = f"Current agent plans: {state['messages'][-1].content}, current state: {state['status']}. Generate the instructions to be executed by the agents. Select only the best agents to address the user query: {state['messages'][0].content}.Generate the list of selected agents along with the context and tasks."
         
-        response = self.planner_agent.invoke({"messages": [{"role": "assistant", "content": query}]})
+        response = self._planner_agent.invoke({"messages": [{"role": "assistant", "content": query}]})
         ans = response['messages'][-1].content
         logger.debug(str(ans))
         
@@ -103,7 +101,7 @@ async def main_graph():
         user_input = input("USER: ")
         final_response = []
         for chunk in graph.stream( {"messages": [{"role": "user", "content": user_input}],'status':'plan'},
-            {'configurable': {'thread_id': "1"},'callbacks':[trace_handler],'metadata':{'langfuse_session_id':id}},
+            {'configurable': {'thread_id': "1"}},
             stream_mode="values",
             subgraphs=True
         ):
