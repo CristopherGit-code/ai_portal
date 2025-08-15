@@ -32,6 +32,8 @@ Full integration on complex planning agent flow, includes verification of query 
 
 ## Basic walkthrough
 
+- [Final Result](walkthrough/Demo_example_view.png) An example of the interface after the AI query received and processed using the chain.
+
 ### Week 3 (Dynamic UI and layout formatted response)
 
 - [Demo video](walkthrough/AI_portal_final_Demo_w3.mp4)
